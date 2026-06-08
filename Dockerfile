@@ -8,6 +8,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
+ENV PYTHONPATH=/app/src
 
 VOLUME ["/data"]
 CMD ["python", "-m", "src.main"]

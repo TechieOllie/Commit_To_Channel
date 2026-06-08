@@ -4,11 +4,16 @@ from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 import config
+from source_base import FileSource
 
 
-class GitManager:
+class GitSource(FileSource):
     def __init__(self):
         self.repo_dir = Path(config.CLONE_DIR)
+
+    @property
+    def base_dir(self) -> Path:
+        return self.repo_dir
 
     @property
     def _auth_url(self) -> str:
@@ -19,11 +24,6 @@ class GitManager:
         if parsed.port:
             auth_netloc += f":{parsed.port}"
         return urlunparse(parsed._replace(netloc=auth_netloc))
-
-    def update_repo(self) -> bool:
-        if self.repo_dir.exists():
-            return self._fetch_and_reset()
-        return self._clone()
 
     def _clone(self) -> bool:
         self.repo_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -58,20 +58,36 @@ class GitManager:
             return False
         return True
 
-    def get_current_commit(self) -> str:
+    def poll(self, last_marker: Optional[str]) -> tuple[bool, str, list[Path]]:
+        try:
+            if self.repo_dir.exists():
+                if not self._fetch_and_reset():
+                    return False, last_marker or "", []
+            else:
+                if not self._clone():
+                    return False, last_marker or "", []
+
+            current = self._current_commit()
+            if current == last_marker:
+                return True, current, []
+
+            files = self._changed_md_files(last_marker)
+            return True, current, files
+        except Exception as e:
+            print(f"Git poll error: {e}")
+            return False, last_marker or "", []
+
+    def _current_commit(self) -> str:
         result = subprocess.run(
             ["git", "-C", str(self.repo_dir), "rev-parse", "HEAD"],
             capture_output=True, text=True,
         )
         return result.stdout.strip()
 
-    def get_changed_md_files(self, since_commit: Optional[str]) -> list[Path]:
-        if since_commit:
+    def _changed_md_files(self, since: Optional[str]) -> list[Path]:
+        if since:
             result = subprocess.run(
-                [
-                    "git", "-C", str(self.repo_dir),
-                    "diff", "--name-only", since_commit, "HEAD",
-                ],
+                ["git", "-C", str(self.repo_dir), "diff", "--name-only", since, "HEAD"],
                 capture_output=True, text=True,
             )
             changed = [l.strip() for l in result.stdout.splitlines() if l.strip()]
