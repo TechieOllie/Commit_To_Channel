@@ -69,7 +69,7 @@ Invite the bot with **View Channels**, **Send Messages**, and **Read Message His
 
 ## Disclaimer
 
-This project was developed with the assistance of AI (Claude Code by Anthropic).
+This project was developed with the assistance of AI.
 
 ## Project structure
 
