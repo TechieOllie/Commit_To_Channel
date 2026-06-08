@@ -67,6 +67,10 @@ Connects via WebDAV to Nextcloud's file endpoint. On each poll:
 
 Invite the bot with **View Channels**, **Send Messages**, and **Read Message History** (permission integer `66560`).
 
+## Disclaimer
+
+This project was developed with the assistance of AI (Claude Code by Anthropic).
+
 ## Project structure
 
 ```
