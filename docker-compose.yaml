@@ -1,0 +1,11 @@
+services:
+  bot:
+    # Built here for local runs; on a server, use the image CI publishes
+    # (ghcr.io/techieollie/commit_to_channel:latest).
+    build: .
+    container_name: commit-to-channel
+    env_file: .env
+    volumes:
+      # Tracking state, the git clone or the Nextcloud cache.
+      - ./data:/app/data
+    restart: unless-stopped

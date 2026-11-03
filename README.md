@@ -50,18 +50,19 @@ Connects via WebDAV to Nextcloud's file endpoint. On each poll:
 | `DISCORD_CHANNEL_ID` | — | Target channel ID |
 | `POLL_INTERVAL` | `300` | Seconds between polls |
 | `UPLOAD_DELAY` | `1.0` | Seconds between sequential uploads (rate limiting) |
+| `TRACKING_FILE` | `data/tracking.json` | Last processed marker and message IDs |
 | **Git** | | |
 | `GIT_REPO_URL` | — | Repository URL (without credentials) |
 | `GITEA_TOKEN` | — | Git access token |
 | `GIT_USERNAME` | `git` | Username for token auth |
 | `WATCHED_DIRECTORY` | `""` | Subdirectory to scan (empty = whole repo) |
-| `CLONE_DIR` | `/data/repo` | Clone location |
+| `CLONE_DIR` | `data/repo` | Clone location |
 | **Nextcloud** | | |
 | `NEXTCLOUD_URL` | — | Nextcloud server URL |
 | `NEXTCLOUD_USERNAME` | — | Nextcloud username |
 | `NEXTCLOUD_PASSWORD` | — | App password (not your login password) |
 | `NEXTCLOUD_PATH` | `""` | Remote directory containing `.md` files |
-| `NEXTCLOUD_CACHE_DIR` | `/data/nextcloud_cache` | Local cache for downloaded files |
+| `NEXTCLOUD_CACHE_DIR` | `data/nextcloud_cache` | Local cache for downloaded files |
 
 ## Discord bot permissions
 
@@ -71,19 +72,37 @@ Invite the bot with **View Channels**, **Send Messages**, and **Read Message His
 
 This project was developed with the assistance of AI.
 
+## Development
+
+`direnv allow` gives a dev shell (Python, uv, ruff, git from `flake.nix`)
+with `.venv` synced from `uv.lock` and `.env` loaded.
+
+| | |
+| --- | --- |
+| Run | `python -m bot`, or `F5` in VS Code |
+| Add a dependency | `uv add <package>` |
+| Lint / format | `ruff check --fix && ruff format` |
+| Run the container | `docker compose up --build` |
+
+Paths are relative to the working directory: `data/` in the checkout,
+`/app/data` in the container (the `./data` volume).
+
+Every push to `main` publishes `ghcr.io/techieollie/commit_to_channel:latest`.
+
 ## Project structure
 
 ```
 Commit_To_Channel/
 ├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
+├── docker-compose.yaml
+├── pyproject.toml / uv.lock   # dependencies
+├── flake.nix                  # dev shell
 ├── .env.example
-└── src/
+└── bot/
+    ├── __main__.py          # Entry point (python -m bot)
     ├── bot.py               # Discord client, markdown conversion, message sync
-    ├── config.py             # Environment variable loading
-    ├── main.py               # Entry point
-    ├── source_base.py        # Abstract FileSource interface
-    ├── git_source.py         # Git implementation
-    └── nextcloud_source.py   # Nextcloud WebDAV implementation
+    ├── config.py            # Environment variable loading
+    ├── source_base.py       # Abstract FileSource interface
+    ├── git_source.py        # Git implementation
+    └── nextcloud_source.py  # Nextcloud WebDAV implementation
 ```

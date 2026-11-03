@@ -6,8 +6,8 @@ from typing import Optional
 
 import requests
 
-import config
-from source_base import FileSource
+from . import config
+from .source_base import FileSource
 
 DAV_NS = "{DAV:}"
 

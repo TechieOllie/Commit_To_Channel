@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
-import config
-from source_base import FileSource
+from . import config
+from .source_base import FileSource
 
 
 class GitSource(FileSource):

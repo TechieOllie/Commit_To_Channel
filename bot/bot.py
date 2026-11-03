@@ -6,10 +6,10 @@ from pathlib import Path
 
 import discord
 
-import config
-from source_base import FileSource
-from git_source import GitSource
-from nextcloud_source import NextcloudSource
+from . import config
+from .source_base import FileSource
+from .git_source import GitSource
+from .nextcloud_source import NextcloudSource
 
 DISCORD_MAX_LENGTH = 2000
 
@@ -78,6 +78,7 @@ class CommitBot(discord.Client):
         self._tracking_file = Path(config.TRACKING_FILE)
         self._last_marker: str | None = None
         self._file_messages: dict[str, list[int]] = {}
+        self._watch_task: asyncio.Task | None = None
         self._load_tracking()
 
     def _load_tracking(self):
@@ -111,12 +112,18 @@ class CommitBot(discord.Client):
             await self.close()
             return
         print(f"File source: {config.FILE_SOURCE}")
-        self.loop.create_task(self._watch_loop())
+        # on_ready runs again after every reconnect: start the loop only once.
+        if self._watch_task is None:
+            self._watch_task = asyncio.create_task(self._watch_loop())
 
     async def _watch_loop(self):
         while True:
             try:
-                success, marker, files = self.source.poll(self._last_marker)
+                # Blocking (git subprocesses, WebDAV requests): keep it off the
+                # event loop so the gateway heartbeat keeps running.
+                success, marker, files = await asyncio.to_thread(
+                    self.source.poll, self._last_marker
+                )
                 if not success:
                     print("Source poll returned False, will retry")
                     await asyncio.sleep(config.POLL_INTERVAL)

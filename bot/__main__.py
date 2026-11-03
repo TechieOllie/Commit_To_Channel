@@ -1,8 +1,8 @@
 import asyncio
 import sys
 
-import config
-from bot import CommitBot
+from . import config
+from .bot import CommitBot
 
 
 async def main():
@@ -11,8 +11,10 @@ async def main():
         missing.append("DISCORD_TOKEN")
     if not config.DISCORD_CHANNEL_ID:
         missing.append("DISCORD_CHANNEL_ID")
-    if not config.GIT_REPO_URL:
+    if config.FILE_SOURCE == "git" and not config.GIT_REPO_URL:
         missing.append("GIT_REPO_URL")
+    if config.FILE_SOURCE == "nextcloud" and not config.NEXTCLOUD_URL:
+        missing.append("NEXTCLOUD_URL")
 
     if missing:
         print(f"Missing required env vars: {', '.join(missing)}")
