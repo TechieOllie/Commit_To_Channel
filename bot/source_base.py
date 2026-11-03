@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 
 
 class FileSource(ABC):
@@ -10,7 +9,7 @@ class FileSource(ABC):
         """Local directory where synced files can be read."""
 
     @abstractmethod
-    def poll(self, last_marker: Optional[str]) -> tuple[bool, str, list[Path]]:
+    def poll(self, last_marker: str | None) -> tuple[bool, str, list[Path]]:
         """
         Check remote for changes, download new/modified files locally.
 

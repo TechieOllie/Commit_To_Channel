@@ -1,6 +1,5 @@
 import subprocess
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 from . import config
@@ -29,7 +28,8 @@ class GitSource(FileSource):
         self.repo_dir.parent.mkdir(parents=True, exist_ok=True)
         result = subprocess.run(
             ["git", "clone", "--filter=blob:none", self._auth_url, str(self.repo_dir)],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             print(f"Clone failed: {result.stderr.strip()}")
@@ -39,26 +39,36 @@ class GitSource(FileSource):
     def _fetch_and_reset(self) -> bool:
         if config.GITEA_TOKEN:
             subprocess.run(
-                ["git", "-C", str(self.repo_dir), "remote", "set-url", "origin", self._auth_url],
+                [
+                    "git",
+                    "-C",
+                    str(self.repo_dir),
+                    "remote",
+                    "set-url",
+                    "origin",
+                    self._auth_url,
+                ],
                 capture_output=True,
             )
         fetch = subprocess.run(
             ["git", "-C", str(self.repo_dir), "fetch", "--quiet", "origin"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if fetch.returncode != 0:
             print(f"Fetch failed: {fetch.stderr.strip()}")
             return False
         reset = subprocess.run(
             ["git", "-C", str(self.repo_dir), "reset", "--hard", "@{u}"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if reset.returncode != 0:
             print(f"Reset failed: {reset.stderr.strip()}")
             return False
         return True
 
-    def poll(self, last_marker: Optional[str]) -> tuple[bool, str, list[Path]]:
+    def poll(self, last_marker: str | None) -> tuple[bool, str, list[Path]]:
         try:
             if self.repo_dir.exists():
                 if not self._fetch_and_reset():
@@ -80,21 +90,24 @@ class GitSource(FileSource):
     def _current_commit(self) -> str:
         result = subprocess.run(
             ["git", "-C", str(self.repo_dir), "rev-parse", "HEAD"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         return result.stdout.strip()
 
-    def _changed_md_files(self, since: Optional[str]) -> list[Path]:
+    def _changed_md_files(self, since: str | None) -> list[Path]:
         if since:
             result = subprocess.run(
                 ["git", "-C", str(self.repo_dir), "diff", "--name-only", since, "HEAD"],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
             )
             changed = [l.strip() for l in result.stdout.splitlines() if l.strip()]
         else:
             result = subprocess.run(
                 ["git", "-C", str(self.repo_dir), "ls-files"],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
             )
             changed = [l.strip() for l in result.stdout.splitlines() if l.strip()]
 

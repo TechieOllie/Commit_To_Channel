@@ -1,5 +1,5 @@
-import json
 import asyncio
+import json
 import re
 import urllib.parse
 from pathlib import Path
@@ -7,9 +7,9 @@ from pathlib import Path
 import discord
 
 from . import config
-from .source_base import FileSource
 from .git_source import GitSource
 from .nextcloud_source import NextcloudSource
+from .source_base import FileSource
 
 DISCORD_MAX_LENGTH = 2000
 
@@ -18,25 +18,24 @@ def strip_frontmatter(text: str) -> str:
     if text.startswith("---"):
         end = text.find("---", 3)
         if end != -1:
-            text = text[end + 3:]
-            if text.startswith("\n"):
-                text = text[1:]
+            text = text[end + 3 :]
+            text = text.removeprefix("\n")
     return text
 
 
 def convert_to_discord_markdown(text: str) -> str:
     text = strip_frontmatter(text)
     text = text.expandtabs(2)
-    text = re.sub(r'^---\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r"^---\s*$", "", text, flags=re.MULTILINE)
 
     def _wikilink_pipe(m):
-        return f'[{m.group(2)}]({urllib.parse.quote(m.group(1), safe="/")}.md)'
+        return f"[{m.group(2)}]({urllib.parse.quote(m.group(1), safe='/')}.md)"
 
     def _wikilink(m):
-        return f'[{m.group(1)}]({urllib.parse.quote(m.group(1), safe="/")}.md)'
+        return f"[{m.group(1)}]({urllib.parse.quote(m.group(1), safe='/')}.md)"
 
-    text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', _wikilink_pipe, text)
-    text = re.sub(r'\[\[([^\]]+)\]\]', _wikilink, text)
+    text = re.sub(r"\[\[([^\]|]+)\|([^\]]+)\]\]", _wikilink_pipe, text)
+    text = re.sub(r"\[\[([^\]]+)\]\]", _wikilink, text)
     return text
 
 
@@ -52,9 +51,9 @@ def chunk_content(header: str, body: str) -> list[str]:
             chunks.append(remaining)
             break
 
-        split = remaining.rfind('\n', 0, DISCORD_MAX_LENGTH)
+        split = remaining.rfind("\n", 0, DISCORD_MAX_LENGTH)
         if split <= 0:
-            split = remaining.rfind(' ', 0, DISCORD_MAX_LENGTH)
+            split = remaining.rfind(" ", 0, DISCORD_MAX_LENGTH)
         if split <= 0:
             split = DISCORD_MAX_LENGTH
 
@@ -88,20 +87,21 @@ class CommitBot(discord.Client):
                 self._last_marker = data.get("last_marker") or data.get("last_commit")
                 raw = data.get("messages", {})
                 self._file_messages = {
-                    k: v if isinstance(v, list) else [v]
-                    for k, v in raw.items()
+                    k: v if isinstance(v, list) else [v] for k, v in raw.items()
                 }
-            except (json.JSONDecodeError, KeyError):
+            except json.JSONDecodeError, KeyError:
                 self._last_marker = None
                 self._file_messages = {}
 
     def _save_tracking(self):
         self._tracking_file.parent.mkdir(parents=True, exist_ok=True)
         self._tracking_file.write_text(
-            json.dumps({
-                "last_marker": self._last_marker,
-                "messages": self._file_messages,
-            })
+            json.dumps(
+                {
+                    "last_marker": self._last_marker,
+                    "messages": self._file_messages,
+                }
+            )
         )
 
     async def on_ready(self):
@@ -152,7 +152,7 @@ class CommitBot(discord.Client):
                     msg = await self._channel.fetch_message(old_ids[i])
                     await msg.edit(content=chunk)
                     new_ids.append(msg.id)
-                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                except discord.NotFound, discord.Forbidden, discord.HTTPException:
                     msg = await self._channel.send(chunk)
                     new_ids.append(msg.id)
             else:
@@ -161,12 +161,12 @@ class CommitBot(discord.Client):
 
             await asyncio.sleep(config.UPLOAD_DELAY)
 
-        stale = old_ids[len(chunks):]
+        stale = old_ids[len(chunks) :]
         for mid in stale:
             try:
                 msg = await self._channel.fetch_message(mid)
                 await msg.delete()
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            except discord.NotFound, discord.Forbidden, discord.HTTPException:
                 pass
 
         self._file_messages[rel] = new_ids
@@ -184,16 +184,20 @@ class CommitBot(discord.Client):
                 header = f"📄 `{rel}`"
                 chunks = chunk_content(header, body)
                 await self._sync_messages(rel, chunks)
-                print(f"Synced: {rel} ({len(chunks)} message{'s' if len(chunks) > 1 else ''})")
+                print(
+                    f"Synced: {rel} ({len(chunks)} message{'s' if len(chunks) > 1 else ''})"
+                )
             except Exception as e:
                 print(f"Failed to process {file_path}: {e}")
 
-        stale = [k for k in self._file_messages if not (self.source.base_dir / k).exists()]
+        stale = [
+            k for k in self._file_messages if not (self.source.base_dir / k).exists()
+        ]
         for k in stale:
             for mid in self._file_messages[k]:
                 try:
                     msg = await self._channel.fetch_message(mid)
                     await msg.delete()
-                except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                except discord.NotFound, discord.Forbidden, discord.HTTPException:
                     pass
             del self._file_messages[k]

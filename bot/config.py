@@ -1,6 +1,5 @@
 import os
 
-
 FILE_SOURCE = os.getenv("FILE_SOURCE", "git")
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
