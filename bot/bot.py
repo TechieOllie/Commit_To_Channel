@@ -46,19 +46,22 @@ def chunk_content(header: str, body: str) -> list[str]:
 
     chunks = []
     remaining = body
+    # The first message also carries the header and its newline.
+    limit = DISCORD_MAX_LENGTH - len(header) - 1
     while remaining:
-        if len(remaining) <= DISCORD_MAX_LENGTH:
+        if len(remaining) <= limit:
             chunks.append(remaining)
             break
 
-        split = remaining.rfind("\n", 0, DISCORD_MAX_LENGTH)
+        split = remaining.rfind("\n", 0, limit)
         if split <= 0:
-            split = remaining.rfind(" ", 0, DISCORD_MAX_LENGTH)
+            split = remaining.rfind(" ", 0, limit)
         if split <= 0:
-            split = DISCORD_MAX_LENGTH
+            split = limit
 
         chunks.append(remaining[:split])
         remaining = remaining[split:]
+        limit = DISCORD_MAX_LENGTH
 
     return [f"{header}\n{chunks[0]}"] + chunks[1:]
 
