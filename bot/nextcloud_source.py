@@ -2,12 +2,11 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Optional
 
 import requests
 
-import config
-from source_base import FileSource
+from . import config
+from .source_base import FileSource
 
 DAV_NS = "{DAV:}"
 
@@ -35,7 +34,7 @@ class NextcloudSource(FileSource):
         if self._manifest_file.exists():
             try:
                 self._stored_manifest = json.loads(self._manifest_file.read_text())
-            except (json.JSONDecodeError, OSError):
+            except json.JSONDecodeError, OSError:
                 self._stored_manifest = {}
 
     def _save_manifest(self, manifest: dict[str, str]):
@@ -48,7 +47,8 @@ class NextcloudSource(FileSource):
     def _list_remote(self) -> dict[str, str]:
         headers = {"Depth": "infinity"}
         resp = requests.request(
-            "PROPFIND", self._dav_root,
+            "PROPFIND",
+            self._dav_root,
             auth=(self.username, self.password),
             headers=headers,
             timeout=30,
@@ -66,7 +66,7 @@ class NextcloudSource(FileSource):
             path = href.text
             if not path.startswith(prefix):
                 continue
-            rel = path[len(prefix):]
+            rel = path[len(prefix) :]
             if not rel or not rel.endswith(".md"):
                 continue
 
@@ -90,7 +90,7 @@ class NextcloudSource(FileSource):
         local.parent.mkdir(parents=True, exist_ok=True)
         local.write_bytes(resp.content)
 
-    def poll(self, last_marker: Optional[str]) -> tuple[bool, str, list[Path]]:
+    def poll(self, last_marker: str | None) -> tuple[bool, str, list[Path]]:
         try:
             current = self._list_remote()
             marker = self._compute_marker(current)

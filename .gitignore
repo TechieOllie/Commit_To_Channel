@@ -1,4 +1,7 @@
+/.venv/
+/.direnv/
+/.ruff_cache/
 __pycache__/
-*.pyc
-.env
-data/
+# Secrets; .env.example is the committed one.
+/.env
+/data/
